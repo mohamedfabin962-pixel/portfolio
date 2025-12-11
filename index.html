@@ -1186,9 +1186,9 @@
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script> -->
 
-<script>
+<!-- <script>
   document.addEventListener("DOMContentLoaded", () => {
     emailjs.init("W1nyVRlxTRDzk6mM6"); // Your Public API Key
 
@@ -1266,8 +1266,94 @@
     });
   });
 </script>
+ -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var PUBLIC_KEY = "W1nyVRlxTRDzk6mM6";
+  var SERVICE_ID = "service_67rnhml";
+  var TEMPLATE_ID = "template_19f6byi";
 
+  if (typeof emailjs === "undefined") {
+    console.error("EmailJS SDK missing. Add the SDK script before this script.");
+    var gm = document.querySelector(".error-message");
+    if (gm) { gm.style.display = "block"; gm.innerText = "Email service not loaded. See console."; }
+    return;
+  }
+  try { emailjs.init(PUBLIC_KEY); console.log("EmailJS initialized"); } catch(e){ console.warn(e); }
 
+  var form = document.getElementById("contact-form");
+  var submitBtn = document.getElementById("submit-btn");
+  var loadingEl = document.querySelector(".loading");
+  var errorEl = document.querySelector(".error-message");
+  var successEl = document.querySelector(".sent-message");
+
+  var nameInput = document.getElementById("form_name");
+  var emailInput = document.getElementById("email_id");
+  var subjectInput = document.getElementById("subject");
+  var messageInput = document.getElementById("message");
+
+  if (!form || !submitBtn || !nameInput || !emailInput || !subjectInput || !messageInput) {
+    console.error("Missing form elements. Check IDs.");
+    if (errorEl) { errorEl.style.display = "block"; errorEl.innerText = "Form setup error. Check console."; }
+    return;
+  }
+
+  function removeFieldError(input){ if(!input) return; var n = input.nextElementSibling; if(n && n.classList.contains("error-text")) n.remove(); }
+  function addFieldError(input,msg){ removeFieldError(input); var s = document.createElement("small"); s.className="error-text"; s.style.color="red"; s.innerText=msg; input.insertAdjacentElement("afterend", s); }
+
+  function validateName(){ var v=nameInput.value.trim(); removeFieldError(nameInput); if(!/^[A-Za-z\s]{3,}$/.test(v)){ addFieldError(nameInput,"Name must have at least 3 letters."); return false;} return true; }
+  function validateEmail(){ var v=emailInput.value.trim(); removeFieldError(emailInput); if(!/^[^ ]+@[^ ]+\.[a-z]{2,4}$/.test(v)){ addFieldError(emailInput,"Please enter a valid email."); return false;} return true; }
+  function validateSubject(){ var v=subjectInput.value.trim(); removeFieldError(subjectInput); if(v===""){ addFieldError(subjectInput,"Subject is required."); return false;} return true; }
+  function validateMessage(){ var v=messageInput.value.trim(); removeFieldError(messageInput); if(v===""){ addFieldError(messageInput,"Message cannot be empty."); return false;} return true; }
+
+  // show field error when user leaves (tab out or click away)
+  nameInput.addEventListener("focusout", validateName);
+  emailInput.addEventListener("focusout", validateEmail);
+  subjectInput.addEventListener("focusout", validateSubject);
+  messageInput.addEventListener("focusout", validateMessage);
+
+  // while typing, clear error quickly
+  nameInput.addEventListener("input", function(){ if(nameInput.nextElementSibling?.classList.contains("error-text")) validateName(); });
+  emailInput.addEventListener("input", function(){ if(emailInput.nextElementSibling?.classList.contains("error-text")) validateEmail(); });
+  subjectInput.addEventListener("input", function(){ if(subjectInput.nextElementSibling?.classList.contains("error-text")) validateSubject(); });
+  messageInput.addEventListener("input", function(){ if(messageInput.nextElementSibling?.classList.contains("error-text")) validateMessage(); });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    if (loadingEl) loadingEl.style.display="none";
+    if (errorEl) { errorEl.style.display="none"; errorEl.innerText=""; }
+    if (successEl) successEl.style.display="none";
+    document.querySelectorAll(".error-text").forEach(n => n.remove());
+
+    var ok = validateName() && validateEmail() && validateSubject() && validateMessage();
+    if (!ok) {
+      if (!validateName()) nameInput.focus();
+      else if (!validateEmail()) emailInput.focus();
+      else if (!validateSubject()) subjectInput.focus();
+      else messageInput.focus();
+      return;
+    }
+
+    if (submitBtn) { submitBtn.disabled=true; submitBtn.innerText="Sending..."; }
+    if (loadingEl) loadingEl.style.display="block";
+
+    console.log("Sending via EmailJS...");
+    emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, form)
+      .then(function(res){
+        console.log("EmailJS success:", res);
+        if (loadingEl) loadingEl.style.display="none";
+        if (successEl) successEl.style.display="block";
+        form.reset();
+      })
+      .catch(function(err){
+        console.error("EmailJS error:", err);
+        if (loadingEl) loadingEl.style.display="none";
+        if (errorEl) { errorEl.style.display="block"; errorEl.innerText = (err && err.text) ? ("Failed to send: "+ err.text) : "Failed to send. See console."; }
+      })
+      .finally(function(){ if (submitBtn){ submitBtn.disabled=false; submitBtn.innerText="Send Message"; } });
+  });
+});
+</script>
 </body>
 
 </html>
